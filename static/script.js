@@ -9,33 +9,79 @@ document.getElementById('fileInput').addEventListener('change', function(event) 
     reader.onload = function() {
         const img = new Image();
         img.onload = function() {
-            // ... код анализа цветов ...
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
+            // Отображаем уменьшенное изображение
+            const previewImage = document.getElementById('resizedImageContainer');
+            const MAX_WIDTH = 100; // Максимальная ширина уменьшенного изображения
+            const MAX_HEIGHT = 100;
 
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0, img.width, img.height);
+            let width = img.width;
+            let height = img.height;
 
-            const imageData = ctx.getImageData(0, 0, img.width, img.height);
-            const pixelData = imageData.data;
-
-            const colorCount = {};
-            for (let i = 0; i < pixelData.length; i += 4) {
-                const r = pixelData[i];
-                const g = pixelData[i + 1];
-                const b = pixelData[i + 2];
-                const color = `rgb(${r},${g},${b})`;
-
-                if (colorCount[color]) {
-                    colorCount[color]++;
-                } else {
-                    colorCount[color] = 1;
+            if (width > height) {
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+            } else {
+                if (height > MAX_HEIGHT) {
+                    width *= MAX_HEIGHT / height;
+                    height = MAX_HEIGHT;
                 }
             }
 
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Отображаем уменьшенное изображение в элементе img
+            previewImage.src = canvas.toDataURL('image/jpeg');
+            previewImage.style.display = 'block';
+            previewImage.className = 'previewImage';
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixelData = imageData.data;
+            const pixelSize = 10;
+
+            const colorCount = {};
+            for (let y = 0; y < canvas.height; y += pixelSize) {
+                for (let x = 0; x < canvas.width; x += pixelSize) {
+                    // Получаем цвет текущего пикселя
+                    const index = (y * canvas.width + x) * 4;
+                    const r = pixelData[index];
+                    const g = pixelData[index + 1];
+                    const b = pixelData[index + 2];
+                    const a = pixelData[index + 3];
+
+                    // Пропускаем прозрачные пиксели
+                    if (a === 0) {
+                        continue;
+                    }
+
+                    // Исключаем пиксели с низкой насыщенностью (преобразуем RGB в HSV и проверяем насыщенность)
+                    const saturation = calculateSaturation(r, g, b);
+                    if (saturation < 0.2) { // Настройте этот порог по вашему усмотрению
+                        continue;
+                    }
+
+                    // Рисуем "пиксель" с выбранным цветом
+                    ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
+                    ctx.fillRect(x, y, pixelSize, pixelSize);
+
+                    const color = `rgb(${r},${g},${b})`;
+
+                    if (colorCount[color]) {
+                        colorCount[color]++;
+                    } else {
+                        colorCount[color] = 1;
+                    }
+                }
+            }
             const sortedColors = Object.keys(colorCount).sort((a, b) => colorCount[b] - colorCount[a]);
 
+            console.log("sortedColors", sortedColors);
             const colors = sortedColors.slice(0, 5);
 
             document.documentElement.style.setProperty('--color1', colors[0]);
@@ -47,7 +93,7 @@ document.getElementById('fileInput').addEventListener('change', function(event) 
             const colorPalette = document.getElementById('colorPalette');
             colorPalette.innerHTML = ''; // Очистить предыдущие цвета
 
-            sortedColors.slice(0, 5).forEach(color => {
+            colors.forEach(color => {
                 const box = document.createElement('div');
                 box.className = 'box';
                 const colorBox = document.createElement('div');
@@ -55,20 +101,23 @@ document.getElementById('fileInput').addEventListener('change', function(event) 
                 colorBox.style.backgroundColor = color;
                 box.appendChild(colorBox);
 
+                const infoContainer = document.createElement('div'); // Создаем контейнер для hexSpan и copyButton
+                infoContainer.className = 'infoContainer';
+
                 const hexSpan = document.createElement('span');
                 hexSpan.className = 'hexSpan';
-                hexSpan.innerText = rgbToHex(color); // Установка HEX-кода
-                box.appendChild(hexSpan);
+                hexSpan.innerText = rgbToHex(color); // Преобразуем RGB в HEX
+                infoContainer.appendChild(hexSpan);
 
-                // Создаем кнопку для копирования
+                // Создаем кнопку для копирования HEX-кода цвета
                 const copyButton = document.createElement('button');
-                copyButton.innerHTML = '&#128203;'; // Это Unicode-символ для копирования или '📃'
+                copyButton.innerHTML = '&#128203;'; // Unicode символ для копирования или '📃'
                 copyButton.title = 'Copy';
                 copyButton.addEventListener('click', function() {
-                copyToClipboard(rgbToHex(color));
+                    copyToClipboard(rgbToHex(color));
                 });
-                box.appendChild(copyButton);
-
+                infoContainer.appendChild(copyButton);
+                box.appendChild(infoContainer);
 
                 colorPalette.appendChild(box);
             });
@@ -99,4 +148,17 @@ function copyToClipboard(text) {
     document.execCommand('copy');
     document.body.removeChild(input);
     alert('Color copied to clipboard: ' + text);
+}
+
+// Функция для вычисления насыщенности цвета в пространстве HSV
+function calculateSaturation(red, green, blue) {
+    const max = Math.max(red, green, blue);
+    const min = Math.min(red, green, blue);
+    const delta = max - min;
+
+    if (max === 0) {
+        return 0;
+    }
+
+    return delta / max;
 }

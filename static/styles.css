@@ -5,7 +5,17 @@ body {
 }
 
 h1 {
+    padding: 25px 10px;
+}
+
+.previewImage {
+    display: flex; /* Используем flex для центрирования */
+    justify-content: center; /* Центрируем по горизонтали */
     padding: 10px;
+}
+#resizedImageContainer {
+    border: 1px solid #000;
+    border-radius: 5px;
 }
 
 #fileInput {
@@ -24,8 +34,9 @@ h1 {
 
 .container {
     max-width: 800px;
-    height: 600px;
-    margin: 50px auto;
+    max-height: 1100px;
+    min-height: 700px;
+    margin: 30px auto;
     border-radius: 5px;
     background: linear-gradient(300deg, var(--color1), var(--color2), var(--color3), var(--color4), var(--color5));
     background-size: 150% 150%;
@@ -60,11 +71,15 @@ h1 {
 }
 
 .box {
-    width: 150px;
+    width: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 10px;
 }
 
 .colorBox {
-    width: 90px;
+    width: 100px;
     height: 70px;
     display: inline-block;
     margin: 10px;
@@ -73,7 +88,17 @@ h1 {
 }
 
 .hexSpan {
-    padding-right: 5px;
+    margin: 5px;
+}
+
+.infoContainer {
+    width: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: white;
+    border-radius: 5px;
+    margin-bottom: 20px;
 }
 
 .spinner {
@@ -94,4 +119,11 @@ h1 {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+footer {
+  width: 100%;
+  position: fixed;
+  bottom: 10px;
+  text-align: center;
 }
